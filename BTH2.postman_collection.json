@@ -1,0 +1,127 @@
+{
+  "info": {
+    "name": "BTH2 Django JWT",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000"
+    },
+    {
+      "key": "token",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userName\": \"admin\",\n  \"password\": \"MTIzNDU2\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Login succeeds\", () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200) {",
+              "  const token = pm.response.json().token;",
+              "  pm.collectionVariables.set(\"token\", token);",
+              "  const parts = token.split(\".\");",
+              "  pm.test(\"JWT has 3 parts\", () => pm.expect(parts.length).to.eql(3));",
+              "  const decode = s => JSON.parse(atob(s.replace(/-/g, \"+\").replace(/_/g, \"/\").padEnd(Math.ceil(s.length / 4) * 4, \"=\")));",
+              "  console.log(\"JWT header\", decode(parts[0]));",
+              "  console.log(\"JWT payload\", decode(parts[1]));",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/auth"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Hello World",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/hello"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Missing token",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/hello"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 401\", () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
